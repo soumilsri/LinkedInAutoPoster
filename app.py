@@ -305,21 +305,13 @@ with col2:
         key="manual_topic_input"
     )
     
-    manual_description = st.text_area(
-        "Additional context (optional)",
-        placeholder="Add any specific points or context...",
-        height=60,
-        key="manual_description_input"
-    )
-    
     if st.button("✨ Generate from Custom Topic", type="primary", use_container_width=True):
         manual_topic_value = st.session_state.get('manual_topic_input', '')
-        manual_description_value = st.session_state.get('manual_description_input', '')
         
         if manual_topic_value:
             manual_topic_dict = {
                 "title": manual_topic_value,
-                "description": manual_description_value,
+                "description": "",
                 "url": "",
                 "source": "manual",
                 "timestamp": "manual"
