@@ -162,11 +162,11 @@ def get_finder():
 def get_generator(use_llm=False):
     return PostGenerator(use_llm=use_llm)
 
-# Modern, Classy CSS Styling
+# Clean, Professional CSS Styling
 st.markdown("""
 <style>
-    /* Import Google Fonts */
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+    /* Import Google Fonts - Clean Sans */
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
     
     /* Global Styles */
     * {
@@ -175,330 +175,172 @@ st.markdown("""
     
     /* Main Container */
     .main .block-container {
-        padding-top: 3rem;
-        padding-bottom: 3rem;
+        padding-top: 2rem;
+        padding-bottom: 2rem;
         max-width: 1200px;
     }
     
-    /* Header Styling */
+    /* Header Styling - Clean and Professional */
     .main-header {
-        font-size: 3rem;
-        font-weight: 800;
-        background: linear-gradient(135deg, #0077b5 0%, #00a0dc 50%, #0077b5 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: #0077b5;
         text-align: center;
-        margin-bottom: 1rem;
-        letter-spacing: -0.02em;
+        margin-bottom: 0.5rem;
+        letter-spacing: -0.01em;
     }
     
-    .main-header::after {
-        content: '';
-        display: block;
-        width: 80px;
-        height: 4px;
-        background: linear-gradient(90deg, #0077b5, #00a0dc);
-        margin: 1rem auto;
-        border-radius: 2px;
-    }
-    
-    /* Step Boxes */
-    .step-box {
-        padding: 2rem;
-        border-radius: 16px;
-        background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
-        border: 1px solid rgba(0, 119, 181, 0.1);
-        margin: 1.5rem 0;
-        box-shadow: 0 4px 20px rgba(0, 119, 181, 0.08);
-        transition: all 0.3s ease;
-    }
-    
-    .step-box:hover {
-        box-shadow: 0 8px 30px rgba(0, 119, 181, 0.15);
-        transform: translateY(-2px);
-    }
-    
-    /* Post Box */
-    .post-box {
-        padding: 2rem;
-        border-radius: 16px;
-        background: #ffffff;
-        border: 1px solid rgba(0, 119, 181, 0.15);
-        margin: 1.5rem 0;
-        box-shadow: 0 4px 20px rgba(0, 119, 181, 0.08);
-    }
-    
-    /* Button Styling */
+    /* Button Styling - Clean and Modern */
     .stButton > button {
-        background: linear-gradient(135deg, #0077b5 0%, #00a0dc 100%);
+        background: #0077b5;
         color: white;
         border: none;
-        border-radius: 12px;
-        padding: 0.75rem 2rem;
+        border-radius: 8px;
+        padding: 0.6rem 1.5rem;
         font-weight: 600;
-        font-size: 1rem;
-        transition: all 0.3s ease;
-        box-shadow: 0 4px 15px rgba(0, 119, 181, 0.3);
-        letter-spacing: 0.01em;
+        font-size: 0.95rem;
+        transition: all 0.2s ease;
+        box-shadow: 0 2px 4px rgba(0, 119, 181, 0.2);
     }
     
     .stButton > button:hover {
-        background: linear-gradient(135deg, #005885 0%, #0077b5 100%);
-        box-shadow: 0 6px 25px rgba(0, 119, 181, 0.4);
-        transform: translateY(-2px);
-    }
-    
-    .stButton > button:active {
-        transform: translateY(0);
-        box-shadow: 0 2px 10px rgba(0, 119, 181, 0.3);
+        background: #005885;
+        box-shadow: 0 4px 8px rgba(0, 119, 181, 0.3);
     }
     
     /* Primary Button */
     button[kind="primary"] {
-        background: linear-gradient(135deg, #0077b5 0%, #00a0dc 100%) !important;
-        box-shadow: 0 4px 20px rgba(0, 119, 181, 0.35) !important;
+        background: #0077b5 !important;
+        box-shadow: 0 2px 6px rgba(0, 119, 181, 0.25) !important;
     }
     
     button[kind="primary"]:hover {
-        background: linear-gradient(135deg, #005885 0%, #0077b5 100%) !important;
-        box-shadow: 0 6px 30px rgba(0, 119, 181, 0.45) !important;
+        background: #005885 !important;
+        box-shadow: 0 4px 10px rgba(0, 119, 181, 0.35) !important;
     }
     
     /* Secondary Buttons */
     .stButton > button:not([kind="primary"]) {
-        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-        color: #0077b5;
-        border: 1px solid rgba(0, 119, 181, 0.2);
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        background: #f8f9fa;
+        color: #495057;
+        border: 1px solid #dee2e6;
     }
     
     .stButton > button:not([kind="primary"]):hover {
-        background: linear-gradient(135deg, #e9ecef 0%, #dee2e6 100%);
-        border-color: rgba(0, 119, 181, 0.3);
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        background: #e9ecef;
+        border-color: #adb5bd;
     }
     
-    /* Text Input Styling */
+    /* Text Input Styling - Clean */
     .stTextInput > div > div > input,
     .stTextArea > div > div > textarea {
-        border-radius: 10px;
-        border: 1.5px solid rgba(0, 119, 181, 0.2);
-        padding: 0.75rem 1rem;
-        transition: all 0.3s ease;
+        border-radius: 6px;
+        border: 1px solid #ced4da;
+        padding: 0.6rem 0.9rem;
+        transition: border-color 0.2s ease;
     }
     
     .stTextInput > div > div > input:focus,
     .stTextArea > div > div > textarea:focus {
         border-color: #0077b5;
-        box-shadow: 0 0 0 3px rgba(0, 119, 181, 0.1);
+        outline: none;
+        box-shadow: 0 0 0 2px rgba(0, 119, 181, 0.1);
     }
     
     /* Selectbox Styling */
     .stSelectbox > div > div {
-        border-radius: 10px;
-        border: 1.5px solid rgba(0, 119, 181, 0.2);
+        border-radius: 6px;
+        border: 1px solid #ced4da;
     }
     
-    /* Sidebar Styling */
+    /* Sidebar Styling - Clean */
     [data-testid="stSidebar"] {
-        background: linear-gradient(180deg, #ffffff 0%, #f8f9fa 100%);
-        border-right: 1px solid rgba(0, 119, 181, 0.1);
+        background: #ffffff;
+        border-right: 1px solid #e9ecef;
     }
     
     [data-testid="stSidebar"] .stMarkdown h1,
     [data-testid="stSidebar"] .stMarkdown h2,
     [data-testid="stSidebar"] .stMarkdown h3 {
-        color: #0077b5;
-        font-weight: 700;
+        color: #212529;
+        font-weight: 600;
     }
     
-    /* Card Styling */
-    .card {
-        background: white;
-        border-radius: 16px;
-        padding: 1.5rem;
-        box-shadow: 0 4px 20px rgba(0, 119, 181, 0.08);
-        border: 1px solid rgba(0, 119, 181, 0.1);
-        margin: 1rem 0;
-        transition: all 0.3s ease;
-    }
-    
-    .card:hover {
-        box-shadow: 0 8px 30px rgba(0, 119, 181, 0.15);
-    }
-    
-    /* Section Headers */
+    /* Section Headers - Clean */
     h2, h3 {
-        color: #0077b5;
-        font-weight: 700;
-        margin-top: 2rem;
-        margin-bottom: 1rem;
+        color: #212529;
+        font-weight: 600;
+        margin-top: 1.5rem;
+        margin-bottom: 0.75rem;
     }
     
     h2 {
-        font-size: 1.75rem;
-        border-bottom: 3px solid;
-        border-image: linear-gradient(90deg, #0077b5, #00a0dc) 1;
+        font-size: 1.5rem;
+        border-bottom: 2px solid #e9ecef;
         padding-bottom: 0.5rem;
     }
     
     h3 {
-        font-size: 1.5rem;
-        color: #005885;
+        font-size: 1.25rem;
+        color: #495057;
     }
     
     /* Metrics Styling */
     [data-testid="stMetricValue"] {
-        font-size: 2rem;
-        font-weight: 700;
-        color: #0077b5;
-    }
-    
-    /* Success/Info/Warning Messages */
-    .stSuccess {
-        background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
-        border-left: 4px solid #28a745;
-        border-radius: 8px;
-        padding: 1rem;
-    }
-    
-    .stInfo {
-        background: linear-gradient(135deg, #d1ecf1 0%, #bee5eb 100%);
-        border-left: 4px solid #0077b5;
-        border-radius: 8px;
-        padding: 1rem;
-    }
-    
-    .stWarning {
-        background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
-        border-left: 4px solid #ffc107;
-        border-radius: 8px;
-        padding: 1rem;
-    }
-    
-    /* Expander Styling */
-    .streamlit-expanderHeader {
-        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-        border-radius: 10px;
+        font-size: 1.75rem;
         font-weight: 600;
         color: #0077b5;
     }
     
-    /* Divider */
+    /* Divider - Clean */
     hr {
         border: none;
-        height: 2px;
-        background: linear-gradient(90deg, transparent, #0077b5, transparent);
-        margin: 2rem 0;
-    }
-    
-    /* Scrollbar Styling */
-    ::-webkit-scrollbar {
-        width: 8px;
-        height: 8px;
-    }
-    
-    ::-webkit-scrollbar-track {
-        background: #f1f1f1;
-        border-radius: 10px;
-    }
-    
-    ::-webkit-scrollbar-thumb {
-        background: linear-gradient(135deg, #0077b5, #00a0dc);
-        border-radius: 10px;
-    }
-    
-    ::-webkit-scrollbar-thumb:hover {
-        background: linear-gradient(135deg, #005885, #0077b5);
+        height: 1px;
+        background: #e9ecef;
+        margin: 1.5rem 0;
     }
     
     /* Text Area Styling */
     textarea {
-        border-radius: 12px !important;
-        border: 1.5px solid rgba(0, 119, 181, 0.2) !important;
-        padding: 1rem !important;
+        border-radius: 6px !important;
+        border: 1px solid #ced4da !important;
+        padding: 0.75rem !important;
         font-size: 0.95rem !important;
-        line-height: 1.6 !important;
-    }
-    
-    /* Toggle Switch */
-    .stToggle label {
-        font-weight: 600;
-        color: #0077b5;
-    }
-    
-    /* Slider */
-    .stSlider > div > div {
-        background: linear-gradient(90deg, #0077b5, #00a0dc);
+        line-height: 1.5 !important;
     }
     
     /* Footer */
     .footer {
         text-align: center;
         color: #6c757d;
-        padding: 2rem 0;
-        margin-top: 3rem;
-        border-top: 1px solid rgba(0, 119, 181, 0.1);
+        padding: 1.5rem 0;
+        margin-top: 2rem;
+        border-top: 1px solid #e9ecef;
+        font-size: 0.875rem;
     }
     
-    /* Quick Prompt Buttons */
-    .quick-prompt-btn {
-        background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
-        border: 1.5px solid rgba(0, 119, 181, 0.2);
-        border-radius: 10px;
-        padding: 0.5rem 1rem;
-        font-weight: 500;
-        color: #0077b5;
-        transition: all 0.3s ease;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    /* Improve spacing */
+    .element-container {
+        margin-bottom: 1rem;
     }
     
-    .quick-prompt-btn:hover {
-        background: linear-gradient(135deg, #0077b5 0%, #00a0dc 100%);
-        color: white;
-        border-color: #0077b5;
-        box-shadow: 0 4px 15px rgba(0, 119, 181, 0.3);
-        transform: translateY(-2px);
+    /* Clean scrollbar */
+    ::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
     }
     
-    /* Section Containers */
-    .section-container {
-        background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
-        border-radius: 16px;
-        padding: 2rem;
-        margin: 1.5rem 0;
-        border: 1px solid rgba(0, 119, 181, 0.1);
-        box-shadow: 0 4px 20px rgba(0, 119, 181, 0.08);
+    ::-webkit-scrollbar-track {
+        background: #f1f1f1;
     }
     
-    /* Badge/Status Indicators */
-    .badge {
-        display: inline-block;
-        padding: 0.25rem 0.75rem;
-        border-radius: 20px;
-        font-size: 0.75rem;
-        font-weight: 600;
-        background: linear-gradient(135deg, #0077b5, #00a0dc);
-        color: white;
+    ::-webkit-scrollbar-thumb {
+        background: #adb5bd;
+        border-radius: 3px;
     }
     
-    /* Loading Spinner Enhancement */
-    .stSpinner > div {
-        border-color: #0077b5 transparent transparent transparent !important;
-    }
-    
-    /* Code Block Styling */
-    .stCodeBlock {
-        border-radius: 12px;
-        border: 1px solid rgba(0, 119, 181, 0.1);
-    }
-    
-    /* Caption Styling */
-    .stCaption {
-        color: #6c757d;
-        font-size: 0.85rem;
-        font-weight: 500;
+    ::-webkit-scrollbar-thumb:hover {
+        background: #868e96;
     }
 </style>
 """, unsafe_allow_html=True)
