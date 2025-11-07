@@ -47,7 +47,7 @@ Modified Post:"""
                     ],
                     "model": "llama-3.1-8b-instant",
                     "temperature": 0.7,
-                    "max_tokens": 300
+                    "max_tokens": 500
                 }
                 response = requests.post(
                     "https://api.groq.com/openai/v1/chat/completions",
@@ -59,9 +59,19 @@ Modified Post:"""
                     result = response.json()
                     modified_text = result.get('choices', [{}])[0].get('message', {}).get('content', '')
                     if modified_text:
-                        return modified_text.strip()
+                        # Clean the response - remove any prefixes like "Modified Post:" or "Post:"
+                        cleaned_text = modified_text.strip()
+                        # Remove common prefixes that LLMs might add
+                        prefixes_to_remove = ["Modified Post:", "Post:", "Here's the modified post:", "Modified version:"]
+                        for prefix in prefixes_to_remove:
+                            if cleaned_text.startswith(prefix):
+                                cleaned_text = cleaned_text[len(prefix):].strip()
+                        print(f"✅ Groq: Modified post received ({len(cleaned_text)} chars)")
+                        return cleaned_text
+                else:
+                    print(f"⚠️ Groq API returned status {response.status_code}")
             except Exception as e:
-                print(f"Groq error: {e}")
+                print(f"⚠️ Groq error: {e}")
         
         # Try Together AI
         if together_key:
@@ -83,7 +93,7 @@ Modified Post:"""
                         }
                     ],
                     "temperature": 0.7,
-                    "max_tokens": 300
+                    "max_tokens": 500
                 }
                 response = requests.post(
                     "https://api.together.xyz/v1/chat/completions",
@@ -95,9 +105,19 @@ Modified Post:"""
                     result = response.json()
                     modified_text = result.get('choices', [{}])[0].get('message', {}).get('content', '')
                     if modified_text:
-                        return modified_text.strip()
+                        # Clean the response - remove any prefixes like "Modified Post:" or "Post:"
+                        cleaned_text = modified_text.strip()
+                        # Remove common prefixes that LLMs might add
+                        prefixes_to_remove = ["Modified Post:", "Post:", "Here's the modified post:", "Modified version:"]
+                        for prefix in prefixes_to_remove:
+                            if cleaned_text.startswith(prefix):
+                                cleaned_text = cleaned_text[len(prefix):].strip()
+                        print(f"✅ Together AI: Modified post received ({len(cleaned_text)} chars)")
+                        return cleaned_text
+                else:
+                    print(f"⚠️ Together AI API returned status {response.status_code}")
             except Exception as e:
-                print(f"Together AI error: {e}")
+                print(f"⚠️ Together AI error: {e}")
         
         return None
     except Exception as e:
@@ -420,12 +440,17 @@ if st.session_state.current_post:
         if st.session_state.modification_count > 0:
             st.info(f"📝 Modified {st.session_state.modification_count} time(s)")
         
+        # Use dynamic key to force refresh when content changes
+        content_hash = hash(st.session_state.current_post) % 10000
+        mod_count = st.session_state.modification_count
+        dynamic_key = f"current_post_display_{mod_count}_{content_hash}"
+        
         st.text_area(
             "Post Content",
             st.session_state.current_post,
             height=300,
             disabled=True,
-            key="current_post_display",
+            key=dynamic_key,
             label_visibility="visible"
         )
         
@@ -487,6 +512,9 @@ if st.session_state.current_post:
                         if hf_key:
                             os.environ['HF_API_KEY'] = hf_key
                         
+                        print(f"🔍 Applying prompt: {current_prompt[:50]}...")
+                        print(f"🔍 Original post length: {len(st.session_state.current_post)} chars")
+                        
                         modified_post = apply_custom_prompt_with_llm(
                             st.session_state.current_post,
                             current_prompt,
@@ -496,11 +524,14 @@ if st.session_state.current_post:
                         )
                         
                         if modified_post and len(modified_post.strip()) > 0:
+                            print(f"✅ Modified post received: {len(modified_post)} chars")
+                            print(f"🔍 First 100 chars: {modified_post[:100]}...")
                             st.session_state.current_post = modified_post
                             st.session_state.modification_count += 1
                             st.success("✅ Post refined successfully!")
                             st.rerun()
                         else:
+                            print(f"❌ Modified post is empty or None")
                             st.error("❌ Failed to refine post. Try again or check API keys.")
                 else:
                     st.warning("⚠️ Enable AI and add an API key to use prompts")
