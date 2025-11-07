@@ -162,29 +162,343 @@ def get_finder():
 def get_generator(use_llm=False):
     return PostGenerator(use_llm=use_llm)
 
-# Custom CSS for better styling
+# Modern, Classy CSS Styling
 st.markdown("""
 <style>
+    /* Import Google Fonts */
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+    
+    /* Global Styles */
+    * {
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    }
+    
+    /* Main Container */
+    .main .block-container {
+        padding-top: 3rem;
+        padding-bottom: 3rem;
+        max-width: 1200px;
+    }
+    
+    /* Header Styling */
     .main-header {
-        font-size: 2.5rem;
-        font-weight: bold;
-        color: #0077b5;
+        font-size: 3rem;
+        font-weight: 800;
+        background: linear-gradient(135deg, #0077b5 0%, #00a0dc 50%, #0077b5 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
         text-align: center;
-        margin-bottom: 2rem;
+        margin-bottom: 1rem;
+        letter-spacing: -0.02em;
     }
+    
+    .main-header::after {
+        content: '';
+        display: block;
+        width: 80px;
+        height: 4px;
+        background: linear-gradient(90deg, #0077b5, #00a0dc);
+        margin: 1rem auto;
+        border-radius: 2px;
+    }
+    
+    /* Step Boxes */
     .step-box {
-        padding: 1.5rem;
-        border-radius: 0.5rem;
-        border: 2px solid #0077b5;
-        margin: 1rem 0;
-        background-color: #f8f9fa;
+        padding: 2rem;
+        border-radius: 16px;
+        background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+        border: 1px solid rgba(0, 119, 181, 0.1);
+        margin: 1.5rem 0;
+        box-shadow: 0 4px 20px rgba(0, 119, 181, 0.08);
+        transition: all 0.3s ease;
     }
+    
+    .step-box:hover {
+        box-shadow: 0 8px 30px rgba(0, 119, 181, 0.15);
+        transform: translateY(-2px);
+    }
+    
+    /* Post Box */
     .post-box {
+        padding: 2rem;
+        border-radius: 16px;
+        background: #ffffff;
+        border: 1px solid rgba(0, 119, 181, 0.15);
+        margin: 1.5rem 0;
+        box-shadow: 0 4px 20px rgba(0, 119, 181, 0.08);
+    }
+    
+    /* Button Styling */
+    .stButton > button {
+        background: linear-gradient(135deg, #0077b5 0%, #00a0dc 100%);
+        color: white;
+        border: none;
+        border-radius: 12px;
+        padding: 0.75rem 2rem;
+        font-weight: 600;
+        font-size: 1rem;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(0, 119, 181, 0.3);
+        letter-spacing: 0.01em;
+    }
+    
+    .stButton > button:hover {
+        background: linear-gradient(135deg, #005885 0%, #0077b5 100%);
+        box-shadow: 0 6px 25px rgba(0, 119, 181, 0.4);
+        transform: translateY(-2px);
+    }
+    
+    .stButton > button:active {
+        transform: translateY(0);
+        box-shadow: 0 2px 10px rgba(0, 119, 181, 0.3);
+    }
+    
+    /* Primary Button */
+    button[kind="primary"] {
+        background: linear-gradient(135deg, #0077b5 0%, #00a0dc 100%) !important;
+        box-shadow: 0 4px 20px rgba(0, 119, 181, 0.35) !important;
+    }
+    
+    button[kind="primary"]:hover {
+        background: linear-gradient(135deg, #005885 0%, #0077b5 100%) !important;
+        box-shadow: 0 6px 30px rgba(0, 119, 181, 0.45) !important;
+    }
+    
+    /* Secondary Buttons */
+    .stButton > button:not([kind="primary"]) {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        color: #0077b5;
+        border: 1px solid rgba(0, 119, 181, 0.2);
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    }
+    
+    .stButton > button:not([kind="primary"]):hover {
+        background: linear-gradient(135deg, #e9ecef 0%, #dee2e6 100%);
+        border-color: rgba(0, 119, 181, 0.3);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    }
+    
+    /* Text Input Styling */
+    .stTextInput > div > div > input,
+    .stTextArea > div > div > textarea {
+        border-radius: 10px;
+        border: 1.5px solid rgba(0, 119, 181, 0.2);
+        padding: 0.75rem 1rem;
+        transition: all 0.3s ease;
+    }
+    
+    .stTextInput > div > div > input:focus,
+    .stTextArea > div > div > textarea:focus {
+        border-color: #0077b5;
+        box-shadow: 0 0 0 3px rgba(0, 119, 181, 0.1);
+    }
+    
+    /* Selectbox Styling */
+    .stSelectbox > div > div {
+        border-radius: 10px;
+        border: 1.5px solid rgba(0, 119, 181, 0.2);
+    }
+    
+    /* Sidebar Styling */
+    [data-testid="stSidebar"] {
+        background: linear-gradient(180deg, #ffffff 0%, #f8f9fa 100%);
+        border-right: 1px solid rgba(0, 119, 181, 0.1);
+    }
+    
+    [data-testid="stSidebar"] .stMarkdown h1,
+    [data-testid="stSidebar"] .stMarkdown h2,
+    [data-testid="stSidebar"] .stMarkdown h3 {
+        color: #0077b5;
+        font-weight: 700;
+    }
+    
+    /* Card Styling */
+    .card {
+        background: white;
+        border-radius: 16px;
         padding: 1.5rem;
-        border-radius: 0.5rem;
-        border: 2px solid #28a745;
+        box-shadow: 0 4px 20px rgba(0, 119, 181, 0.08);
+        border: 1px solid rgba(0, 119, 181, 0.1);
         margin: 1rem 0;
-        background-color: #ffffff;
+        transition: all 0.3s ease;
+    }
+    
+    .card:hover {
+        box-shadow: 0 8px 30px rgba(0, 119, 181, 0.15);
+    }
+    
+    /* Section Headers */
+    h2, h3 {
+        color: #0077b5;
+        font-weight: 700;
+        margin-top: 2rem;
+        margin-bottom: 1rem;
+    }
+    
+    h2 {
+        font-size: 1.75rem;
+        border-bottom: 3px solid;
+        border-image: linear-gradient(90deg, #0077b5, #00a0dc) 1;
+        padding-bottom: 0.5rem;
+    }
+    
+    h3 {
+        font-size: 1.5rem;
+        color: #005885;
+    }
+    
+    /* Metrics Styling */
+    [data-testid="stMetricValue"] {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #0077b5;
+    }
+    
+    /* Success/Info/Warning Messages */
+    .stSuccess {
+        background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+        border-left: 4px solid #28a745;
+        border-radius: 8px;
+        padding: 1rem;
+    }
+    
+    .stInfo {
+        background: linear-gradient(135deg, #d1ecf1 0%, #bee5eb 100%);
+        border-left: 4px solid #0077b5;
+        border-radius: 8px;
+        padding: 1rem;
+    }
+    
+    .stWarning {
+        background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+        border-left: 4px solid #ffc107;
+        border-radius: 8px;
+        padding: 1rem;
+    }
+    
+    /* Expander Styling */
+    .streamlit-expanderHeader {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border-radius: 10px;
+        font-weight: 600;
+        color: #0077b5;
+    }
+    
+    /* Divider */
+    hr {
+        border: none;
+        height: 2px;
+        background: linear-gradient(90deg, transparent, #0077b5, transparent);
+        margin: 2rem 0;
+    }
+    
+    /* Scrollbar Styling */
+    ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+    }
+    
+    ::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 10px;
+    }
+    
+    ::-webkit-scrollbar-thumb {
+        background: linear-gradient(135deg, #0077b5, #00a0dc);
+        border-radius: 10px;
+    }
+    
+    ::-webkit-scrollbar-thumb:hover {
+        background: linear-gradient(135deg, #005885, #0077b5);
+    }
+    
+    /* Text Area Styling */
+    textarea {
+        border-radius: 12px !important;
+        border: 1.5px solid rgba(0, 119, 181, 0.2) !important;
+        padding: 1rem !important;
+        font-size: 0.95rem !important;
+        line-height: 1.6 !important;
+    }
+    
+    /* Toggle Switch */
+    .stToggle label {
+        font-weight: 600;
+        color: #0077b5;
+    }
+    
+    /* Slider */
+    .stSlider > div > div {
+        background: linear-gradient(90deg, #0077b5, #00a0dc);
+    }
+    
+    /* Footer */
+    .footer {
+        text-align: center;
+        color: #6c757d;
+        padding: 2rem 0;
+        margin-top: 3rem;
+        border-top: 1px solid rgba(0, 119, 181, 0.1);
+    }
+    
+    /* Quick Prompt Buttons */
+    .quick-prompt-btn {
+        background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+        border: 1.5px solid rgba(0, 119, 181, 0.2);
+        border-radius: 10px;
+        padding: 0.5rem 1rem;
+        font-weight: 500;
+        color: #0077b5;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    }
+    
+    .quick-prompt-btn:hover {
+        background: linear-gradient(135deg, #0077b5 0%, #00a0dc 100%);
+        color: white;
+        border-color: #0077b5;
+        box-shadow: 0 4px 15px rgba(0, 119, 181, 0.3);
+        transform: translateY(-2px);
+    }
+    
+    /* Section Containers */
+    .section-container {
+        background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+        border-radius: 16px;
+        padding: 2rem;
+        margin: 1.5rem 0;
+        border: 1px solid rgba(0, 119, 181, 0.1);
+        box-shadow: 0 4px 20px rgba(0, 119, 181, 0.08);
+    }
+    
+    /* Badge/Status Indicators */
+    .badge {
+        display: inline-block;
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        background: linear-gradient(135deg, #0077b5, #00a0dc);
+        color: white;
+    }
+    
+    /* Loading Spinner Enhancement */
+    .stSpinner > div {
+        border-color: #0077b5 transparent transparent transparent !important;
+    }
+    
+    /* Code Block Styling */
+    .stCodeBlock {
+        border-radius: 12px;
+        border: 1px solid rgba(0, 119, 181, 0.1);
+    }
+    
+    /* Caption Styling */
+    .stCaption {
+        color: #6c757d;
+        font-size: 0.85rem;
+        font-weight: 500;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -605,4 +919,13 @@ if st.session_state.current_post:
 
 # Footer
 st.markdown("---")
-st.markdown("<div style='text-align: center; color: #666;'>Made with ❤️ for zero-cost automation</div>", unsafe_allow_html=True)
+st.markdown("""
+<div class="footer">
+    <p style="font-size: 0.9rem; margin: 0;">
+        Made with <span style="color: #e74c3c;">❤️</span> for zero-cost automation
+    </p>
+    <p style="font-size: 0.75rem; color: #6c757d; margin-top: 0.5rem;">
+        Powered by AI • Built with Streamlit
+    </p>
+</div>
+""", unsafe_allow_html=True)
