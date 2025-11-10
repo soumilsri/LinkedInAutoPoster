@@ -78,8 +78,8 @@ class LinkedInPoster:
             print(f"❌ Error during login: {e}")
             return False
     
-    def post_content(self, content: str) -> bool:
-        """Post content to LinkedIn"""
+    def prepare_post_for_manual_confirmation(self, content: str) -> bool:
+        """Prepare LinkedIn post with content pre-filled, wait for manual confirmation"""
         try:
             # Navigate to LinkedIn feed
             self.driver.get("https://www.linkedin.com/feed/")
@@ -95,11 +95,15 @@ class LinkedInPoster:
                 time.sleep(2)
             except:
                 # Alternative: Look for the post textarea directly
-                post_box = WebDriverWait(self.driver, self.timeout).until(
-                    EC.presence_of_element_located((By.XPATH, "//div[@contenteditable='true'][@role='textbox']"))
-                )
-                post_box.click()
-                time.sleep(1)
+                try:
+                    post_box = WebDriverWait(self.driver, self.timeout).until(
+                        EC.presence_of_element_located((By.XPATH, "//div[@contenteditable='true'][@role='textbox']"))
+                    )
+                    post_box.click()
+                    time.sleep(1)
+                except:
+                    print("⚠️ Could not find post input. Please start a post manually.")
+                    return False
             
             # Find the text area/div
             post_textarea = WebDriverWait(self.driver, self.timeout).until(
@@ -110,10 +114,7 @@ class LinkedInPoster:
             post_textarea.click()
             time.sleep(1)
             
-            # Set content using JavaScript - LinkedIn compatible method
-            # Use innerText which LinkedIn recognizes better
-            content_for_linkedin = content  # Keep content as-is for innerText
-            
+            # Set content using JavaScript - handles emojis and special characters
             self.driver.execute_script("""
                 var element = arguments[0];
                 var text = arguments[1];
@@ -128,10 +129,7 @@ class LinkedInPoster:
                 // Set text using innerText (preserves formatting and handles emojis)
                 element.innerText = text;
                 
-                // Also set textContent as fallback
-                element.textContent = text;
-                
-                // Create a proper InputEvent (more realistic)
+                // Create a proper InputEvent
                 var inputEvent = new InputEvent('input', {
                     bubbles: true,
                     cancelable: true,
@@ -140,7 +138,7 @@ class LinkedInPoster:
                 });
                 element.dispatchEvent(inputEvent);
                 
-                // Trigger beforeinput event (LinkedIn might listen to this)
+                // Trigger beforeinput event
                 var beforeInputEvent = new InputEvent('beforeinput', {
                     bubbles: true,
                     cancelable: true,
@@ -153,15 +151,6 @@ class LinkedInPoster:
                 var changeEvent = new Event('change', { bubbles: true, cancelable: true });
                 element.dispatchEvent(changeEvent);
                 
-                // Trigger keyup event
-                var keyupEvent = new KeyboardEvent('keyup', { 
-                    bubbles: true, 
-                    cancelable: true,
-                    key: 'Enter',
-                    code: 'Enter'
-                });
-                element.dispatchEvent(keyupEvent);
-                
                 // Set cursor to end
                 var range = document.createRange();
                 var selection = window.getSelection();
@@ -170,133 +159,53 @@ class LinkedInPoster:
                 selection.removeAllRanges();
                 selection.addRange(range);
                 
-                // Force a blur and refocus to trigger LinkedIn's validation
-                element.blur();
-                setTimeout(function() {
-                    element.focus();
-                }, 100);
-            """, post_textarea, content_for_linkedin)
+                // Focus the element
+                element.focus();
+            """, post_textarea, content)
             
-            # Wait a bit for LinkedIn to process the content
-            time.sleep(3)
+            # Wait for content to be set
+            time.sleep(2)
             
             # Verify content was set
             actual_content = post_textarea.text
-            if not actual_content or len(actual_content.strip()) < 10:
-                print("⚠️ Content may not have been set properly. Trying alternative method...")
-                # Try typing character by character for first 100 chars, then use JS for rest
-                post_textarea.click()
-                time.sleep(0.5)
-                # Type first part normally (if no emojis)
-                safe_content = content[:100] if len(content) > 100 else content
-                try:
-                    post_textarea.send_keys(safe_content)
-                    time.sleep(1)
-                    # Use JS for the rest if needed
-                    if len(content) > 100:
-                        remaining = content[100:]
-                        self.driver.execute_script("""
-                            var element = arguments[0];
-                            var text = arguments[1];
-                            var textNode = document.createTextNode(text);
-                            element.appendChild(textNode);
-                            element.dispatchEvent(new Event('input', { bubbles: true }));
-                        """, post_textarea, remaining)
-                except:
-                    # If send_keys fails, use JS for everything
-                    pass
-            
-            # Wait for Post button to be enabled
-            time.sleep(2)
-            
-            # Find and click the Post button - try multiple selectors
-            post_button = None
-            selectors = [
-                "//button[contains(., 'Post') and not(contains(@class, 'disabled'))]",
-                "//button[@aria-label='Post']",
-                "//button[contains(@class, 'share-actions__primary-action')]",
-                "//button[contains(text(), 'Post')]",
-                "//span[contains(text(), 'Post')]/ancestor::button"
-            ]
-            
-            for selector in selectors:
-                try:
-                    post_button = WebDriverWait(self.driver, 5).until(
-                        EC.element_to_be_clickable((By.XPATH, selector))
-                    )
-                    if post_button and post_button.is_enabled():
-                        break
-                except:
-                    continue
-            
-            if not post_button:
-                print("❌ Could not find Post button")
+            if actual_content and len(actual_content.strip()) > 10:
+                print("✅ Post content pre-filled successfully!")
+                print("📝 Please review the post in the browser and click 'Post' manually when ready.")
+                print("💡 The browser will remain open for you to complete the posting.")
+                return True
+            else:
+                print("⚠️ Content may not have been set properly.")
+                print("💡 You can manually copy and paste the post content.")
                 return False
             
-            # Scroll button into view
-            self.driver.execute_script("arguments[0].scrollIntoView(true);", post_button)
-            time.sleep(0.5)
+        except Exception as e:
+            print(f"❌ Error preparing post: {e}")
+            return False
+    
+    def post_content(self, content: str) -> bool:
+        """Post content to LinkedIn - Manual confirmation approach"""
+        try:
+            # Prepare the post (pre-fill content)
+            if not self.prepare_post_for_manual_confirmation(content):
+                return False
             
-            # Click the Post button
-            try:
-                post_button.click()
-            except:
-                # Try JavaScript click as fallback
-                self.driver.execute_script("arguments[0].click();", post_button)
+            # Keep browser open and wait for user to manually post
+            print("\n" + "="*60)
+            print("⏳ Waiting for manual confirmation...")
+            print("="*60)
+            print("📋 Instructions:")
+            print("   1. Review the pre-filled post in the browser")
+            print("   2. Make any final edits if needed")
+            print("   3. Click the 'Post' button in LinkedIn")
+            print("   4. Come back here and confirm when done")
+            print("="*60 + "\n")
             
-            # Wait for post to be submitted
-            time.sleep(5)
-            
-            # Verify post was submitted by checking multiple indicators
-            try:
-                # Check if we're back on the feed (modal closed)
-                current_url = self.driver.current_url
-                if "feed" not in current_url:
-                    print("⚠️ Not on feed page. Post may not have been published.")
-                    return False
-                
-                # Wait a bit more for LinkedIn to process
-                time.sleep(3)
-                
-                # Try to verify post appears in feed by checking for the post content
-                # Get first few words of the post to search for
-                post_preview = content[:50].strip()
-                
-                # Check if post appears in feed (look for the text in recent posts)
-                try:
-                    # Look for the post text in the feed
-                    feed_posts = self.driver.find_elements(By.XPATH, 
-                        "//div[contains(@class, 'feed-shared-update-v2')] | //article[contains(@class, 'feed-shared-update-v2')]")
-                    
-                    # Check if any post contains our content
-                    post_found = False
-                    for post_element in feed_posts[:3]:  # Check first 3 posts
-                        post_text = post_element.text
-                        if post_preview.lower() in post_text.lower():
-                            post_found = True
-                            break
-                    
-                    if post_found:
-                        print("✅ Post published successfully and verified in feed!")
-                        return True
-                    else:
-                        print("⚠️ Post button was clicked, but post not found in feed. It may still be processing.")
-                        print("💡 Please check your LinkedIn feed manually to confirm.")
-                        return True  # Return True as button was clicked successfully
-                        
-                except Exception as e:
-                    print(f"⚠️ Could not verify post in feed: {e}")
-                    print("💡 Post button was clicked. Please check your LinkedIn feed manually.")
-                    return True  # Assume success if button was clicked
-                    
-            except Exception as e:
-                print(f"⚠️ Could not verify post status: {e}")
-                print("💡 Post button was clicked. Please check your LinkedIn feed manually.")
-                return True  # Assume success if no critical error
+            # Don't close the browser - let user complete manually
+            # The browser will stay open until user closes it or the script ends
+            return True
             
         except Exception as e:
             print(f"❌ Error posting to LinkedIn: {e}")
-            print("💡 Tip: LinkedIn's interface may have changed. You may need to post manually.")
             return False
     
     def close(self):

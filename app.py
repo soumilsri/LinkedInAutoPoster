@@ -717,47 +717,93 @@ if st.session_state.current_post:
         with col2:
             st.metric("Topic", st.session_state.current_topic[:30] + "..." if len(st.session_state.current_topic) > 30 else st.session_state.current_topic)
         
-        if st.button("📤 Post to LinkedIn", type="primary", use_container_width=True):
-            with st.spinner("Posting to LinkedIn..."):
-                try:
-                    # Update config with credentials
-                    import config
-                    import os
-                    os.environ['LINKEDIN_EMAIL'] = linkedin_email
-                    os.environ['LINKEDIN_PASSWORD'] = linkedin_password
-                    os.environ['HEADLESS_MODE'] = str(headless_mode)
-                    
-                    # Reload config to get new values
-                    import importlib
-                    importlib.reload(config)
-                    
-                    # Create a new poster instance with updated config
-                    poster = LinkedInPoster()
-                    poster.email = linkedin_email
-                    poster.password = linkedin_password
-                    poster.setup_driver()
-                    
-                    if poster.login():
-                        if poster.post_content(st.session_state.current_post):
-                            st.success("✅ Successfully posted to LinkedIn!")
-                            st.balloons()
-                            # Optionally clear the post after successful posting
-                            if st.button("🔄 Create New Post", use_container_width=True):
-                                st.session_state.current_post = None
-                                st.session_state.current_topic = None
-                                st.session_state.modification_count = 0
-                                st.rerun()
+        st.info("💡 **Manual Confirmation Mode:** Choose to either open LinkedIn with post pre-filled, or copy to clipboard for manual pasting.")
+        
+        col_post1, col_post2 = st.columns(2)
+        
+        with col_post1:
+            if st.button("📤 Open LinkedIn (Pre-filled)", type="primary", use_container_width=True):
+                with st.spinner("Opening LinkedIn and pre-filling post..."):
+                    try:
+                        # Update config with credentials
+                        import config
+                        import os
+                        os.environ['LINKEDIN_EMAIL'] = linkedin_email
+                        os.environ['LINKEDIN_PASSWORD'] = linkedin_password
+                        os.environ['HEADLESS_MODE'] = "False"  # Always show browser for manual confirmation
+                        
+                        # Reload config to get new values
+                        import importlib
+                        importlib.reload(config)
+                        
+                        # Create a new poster instance with updated config
+                        poster = LinkedInPoster()
+                        poster.email = linkedin_email
+                        poster.password = linkedin_password
+                        poster.setup_driver()
+                        
+                        if poster.login():
+                            if poster.post_content(st.session_state.current_post):
+                                st.success("✅ Browser opened with post pre-filled!")
+                                st.info("""
+                                **📋 Next Steps:**
+                                1. ✅ Review the post in the opened browser window
+                                2. ✏️ Make any final edits if needed
+                                3. 📤 Click the 'Post' button in LinkedIn
+                                4. ✅ Come back here once you've posted
+                                """)
+                                
+                                # Don't close the browser - let user complete manually
+                                # Store poster in session state so browser stays open
+                                if 'linkedin_poster' not in st.session_state:
+                                    st.session_state.linkedin_poster = poster
+                                
+                                # Option to close browser after posting
+                                if st.button("🔒 I've Posted - Close Browser", key="close_browser_btn", use_container_width=True):
+                                    if 'linkedin_poster' in st.session_state:
+                                        st.session_state.linkedin_poster.close()
+                                        del st.session_state.linkedin_poster
+                                    st.success("✅ Browser closed. Post should be live on LinkedIn!")
+                                    
+                                    # Optionally clear the post after successful posting
+                                    if st.button("🔄 Create New Post", key="new_post_btn", use_container_width=True):
+                                        st.session_state.current_post = None
+                                        st.session_state.current_topic = None
+                                        st.session_state.modification_count = 0
+                                        st.rerun()
+                            else:
+                                st.error("❌ Failed to prepare post. Please try again.")
+                                if 'linkedin_poster' in st.session_state:
+                                    st.session_state.linkedin_poster.close()
+                                    del st.session_state.linkedin_poster
                         else:
-                            st.error("❌ Failed to post. Please try again.")
-                    else:
-                        st.error("❌ Login failed. Please check your credentials.")
-                    
-                    poster.close()
-                except Exception as e:
-                    st.error(f"❌ Error: {str(e)}")
-                    import traceback
-                    st.code(traceback.format_exc())
-                    st.info("💡 Tip: LinkedIn's interface may have changed. You may need to post manually.")
+                            st.error("❌ Login failed. Please check your credentials.")
+                            if 'linkedin_poster' in st.session_state:
+                                st.session_state.linkedin_poster.close()
+                                del st.session_state.linkedin_poster
+                        
+                    except Exception as e:
+                        st.error(f"❌ Error: {str(e)}")
+                        import traceback
+                        st.code(traceback.format_exc())
+                        st.info("💡 Tip: Make sure Chrome/Chromium is installed and try again.")
+                        if 'linkedin_poster' in st.session_state:
+                            try:
+                                st.session_state.linkedin_poster.close()
+                            except:
+                                pass
+                            del st.session_state.linkedin_poster
+        
+        with col_post2:
+            st.markdown("**Or copy manually:**")
+            # Display post in a copyable text area
+            st.text_area(
+                "Click and select all, then copy (Ctrl+C / Cmd+C)",
+                st.session_state.current_post,
+                height=200,
+                key="copyable_post",
+                help="Select all text and copy it, then paste into LinkedIn"
+            )
 
 # Footer
 st.markdown("---")
