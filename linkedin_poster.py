@@ -106,16 +106,59 @@ class LinkedInPoster:
                 EC.presence_of_element_located((By.XPATH, "//div[@contenteditable='true'][@role='textbox'] | //div[@aria-label='Write a post']"))
             )
             
-            # Clear and enter content
+            # Clear and enter content using JavaScript to avoid BMP character issues
             post_textarea.click()
             time.sleep(1)
             
-            # Clear existing content
-            post_textarea.send_keys(Keys.CONTROL + "a")
-            post_textarea.send_keys(Keys.DELETE)
+            # Use JavaScript to set content (handles emojis and special characters)
+            # This method properly handles contenteditable divs and triggers all necessary events
+            # Replace newlines with a placeholder that we'll convert to <br> tags
+            content_with_placeholders = content.replace('\n', '|||NEWLINE|||')
             
-            # Type the post content
-            post_textarea.send_keys(content)
+            self.driver.execute_script("""
+                var element = arguments[0];
+                var text = arguments[1];
+                
+                // Clear existing content
+                element.focus();
+                element.innerHTML = '';
+                
+                // Split by placeholder and create proper formatting
+                var lines = text.split('|||NEWLINE|||');
+                for (var i = 0; i < lines.length; i++) {
+                    if (i > 0) {
+                        // Add line break
+                        var br = document.createElement('br');
+                        element.appendChild(br);
+                    }
+                    // Add text node (handles emojis and special characters)
+                    if (lines[i]) {
+                        var textNode = document.createTextNode(lines[i]);
+                        element.appendChild(textNode);
+                    }
+                }
+                
+                // Set cursor to end
+                var range = document.createRange();
+                range.selectNodeContents(element);
+                range.collapse(false);
+                var selection = window.getSelection();
+                selection.removeAllRanges();
+                selection.addRange(range);
+                
+                // Trigger input event to notify LinkedIn's JavaScript
+                var inputEvent = new Event('input', { bubbles: true, cancelable: true });
+                element.dispatchEvent(inputEvent);
+                
+                // Trigger other events that LinkedIn might be listening to
+                var changeEvent = new Event('change', { bubbles: true, cancelable: true });
+                element.dispatchEvent(changeEvent);
+                
+                // Also trigger keyup event
+                var keyupEvent = new Event('keyup', { bubbles: true, cancelable: true });
+                element.dispatchEvent(keyupEvent);
+            """, post_textarea, content_with_placeholders)
+            
             time.sleep(2)
             
             # Find and click the Post button
