@@ -270,100 +270,247 @@ class LinkedInPoster:
             # Wait for content to be set and LinkedIn to process it
             time.sleep(4)
             
-            # Verify content was set
-            actual_content = post_textarea.text
+            # Verify content was set - try multiple times
+            actual_content = ""
+            for attempt in range(3):
+                actual_content = post_textarea.text
+                if actual_content and len(actual_content.strip()) >= 10:
+                    break
+                time.sleep(2)
+                # Try clicking and triggering events again
+                post_textarea.click()
+                self.driver.execute_script("""
+                    var element = arguments[0];
+                    element.dispatchEvent(new Event('input', { bubbles: true }));
+                    element.dispatchEvent(new Event('change', { bubbles: true }));
+                """, post_textarea)
+            
             if not actual_content or len(actual_content.strip()) < 10:
                 print("⚠️ Content may not have been set properly.")
+                print(f"   Content length: {len(actual_content) if actual_content else 0}")
+                # Try one more time with a different approach
+                try:
+                    # Clear and set again
+                    post_textarea.clear()
+                    post_textarea.send_keys(content[:100])  # Try first 100 chars
+                    time.sleep(1)
+                    # Then use JS for the rest
+                    if len(content) > 100:
+                        self.driver.execute_script("""
+                            var element = arguments[0];
+                            var text = arguments[1];
+                            element.innerText = element.innerText + text;
+                            element.dispatchEvent(new Event('input', { bubbles: true }));
+                        """, post_textarea, content[100:])
+                    time.sleep(2)
+                    actual_content = post_textarea.text
+                except:
+                    pass
+            
+            if not actual_content or len(actual_content.strip()) < 10:
+                print("❌ Failed to set content after multiple attempts")
                 return False
             
-            print("✅ Post content set successfully!")
+            print(f"✅ Post content set successfully! ({len(actual_content)} chars)")
             
-            # Wait for Post button to be enabled
-            time.sleep(2)
+            # Wait for Post button to be enabled - LinkedIn needs time to validate
+            time.sleep(3)
             
             # Find and click the Post button - try multiple selectors
             post_button = None
             selectors = [
-                "//button[contains(., 'Post') and not(contains(@class, 'disabled'))]",
-                "//button[@aria-label='Post']",
-                "//button[contains(@class, 'share-actions__primary-action')]",
-                "//button[contains(text(), 'Post')]",
-                "//span[contains(text(), 'Post')]/ancestor::button",
-                "//button[@data-control-name='share.post']"
+                "//button[contains(., 'Post') and not(contains(@class, 'disabled')) and not(@disabled)]",
+                "//button[@aria-label='Post' and not(@disabled)]",
+                "//button[contains(@class, 'share-actions__primary-action') and not(@disabled)]",
+                "//button[contains(text(), 'Post') and not(@disabled)]",
+                "//span[contains(text(), 'Post')]/ancestor::button[not(@disabled)]",
+                "//button[@data-control-name='share.post' and not(@disabled)]",
+                "//button[contains(@class, 'share-box__post-button')]"
             ]
             
             for selector in selectors:
                 try:
-                    post_button = WebDriverWait(self.driver, 5).until(
+                    # Wait for button to be both visible and enabled
+                    post_button = WebDriverWait(self.driver, 8).until(
                         EC.element_to_be_clickable((By.XPATH, selector))
                     )
+                    # Double check it's enabled
                     if post_button and post_button.is_enabled():
-                        print(f"✅ Found Post button using selector: {selector[:50]}...")
-                        break
+                        # Check if button is actually clickable (not disabled by LinkedIn)
+                        button_class = post_button.get_attribute('class') or ''
+                        if 'disabled' not in button_class.lower():
+                            print(f"✅ Found Post button using selector: {selector[:50]}...")
+                            break
+                        else:
+                            print(f"⚠️ Post button found but appears disabled")
+                            post_button = None
                 except:
                     continue
             
             if not post_button:
-                print("❌ Could not find Post button")
+                print("❌ Could not find enabled Post button")
+                # Try to see what buttons are available
+                try:
+                    all_buttons = self.driver.find_elements(By.XPATH, "//button[contains(., 'Post')]")
+                    print(f"   Found {len(all_buttons)} buttons with 'Post' text")
+                    for btn in all_buttons:
+                        print(f"   - Class: {btn.get_attribute('class')}, Enabled: {btn.is_enabled()}, Disabled attr: {btn.get_attribute('disabled')}")
+                except:
+                    pass
                 return False
             
-            # Scroll button into view
-            self.driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", post_button)
-            time.sleep(1)
+            # Scroll button into view and wait
+            self.driver.execute_script("arguments[0].scrollIntoView({block: 'center', behavior: 'smooth'});", post_button)
+            time.sleep(2)
             
-            # Click the Post button
+            # Click the Post button with multiple strategies
+            clicked = False
             try:
-                # Try regular click first
+                # Strategy 1: Regular click
                 post_button.click()
-                print("✅ Post button clicked!")
-            except:
-                # Try JavaScript click as fallback
+                clicked = True
+                print("✅ Post button clicked (regular click)!")
+            except Exception as e1:
+                print(f"⚠️ Regular click failed: {e1}")
                 try:
+                    # Strategy 2: JavaScript click
                     self.driver.execute_script("arguments[0].click();", post_button)
-                    print("✅ Post button clicked (via JavaScript)!")
-                except Exception as e:
-                    print(f"❌ Could not click Post button: {e}")
-                    return False
+                    clicked = True
+                    print("✅ Post button clicked (JavaScript)!")
+                except Exception as e2:
+                    print(f"⚠️ JavaScript click failed: {e2}")
+                    try:
+                        # Strategy 3: Action chains
+                        from selenium.webdriver.common.action_chains import ActionChains
+                        ActionChains(self.driver).move_to_element(post_button).click().perform()
+                        clicked = True
+                        print("✅ Post button clicked (ActionChains)!")
+                    except Exception as e3:
+                        print(f"❌ All click strategies failed: {e3}")
+                        return False
             
-            # Wait for post to be submitted
-            time.sleep(5)
+            if not clicked:
+                return False
             
-            # Verify post was submitted by checking if modal closed or feed updated
+            # Wait for post to be submitted - check for modal close or confirmation
+            time.sleep(3)
+            
+            # Check for any confirmation dialogs or modals
             try:
+                # Look for confirmation buttons
+                confirm_selectors = [
+                    "//button[contains(., 'Confirm')]",
+                    "//button[contains(., 'Publish')]",
+                    "//button[@aria-label='Confirm']"
+                ]
+                for confirm_selector in confirm_selectors:
+                    try:
+                        confirm_btn = self.driver.find_element(By.XPATH, confirm_selector)
+                        if confirm_btn.is_displayed():
+                            print("⚠️ Found confirmation dialog, clicking confirm...")
+                            confirm_btn.click()
+                            time.sleep(2)
+                            break
+                    except:
+                        continue
+            except:
+                pass
+            
+            # Additional wait for LinkedIn to process
+            time.sleep(4)
+            
+            # Verify post was submitted by checking multiple indicators
+            try:
+                # Wait a bit more for LinkedIn to process
+                time.sleep(2)
+                
+                # Check if modal/post dialog is still open
+                modal_open = False
+                try:
+                    # Look for the post modal/dialog
+                    modal_selectors = [
+                        "//div[contains(@class, 'share-box')]",
+                        "//div[contains(@class, 'share-modal')]",
+                        "//div[@role='dialog']"
+                    ]
+                    for modal_selector in modal_selectors:
+                        try:
+                            modal = self.driver.find_element(By.XPATH, modal_selector)
+                            if modal.is_displayed():
+                                modal_open = True
+                                break
+                        except:
+                            continue
+                except:
+                    pass
+                
                 # Check if we're back on the feed (modal closed)
                 current_url = self.driver.current_url
-                if "feed" in current_url:
+                on_feed = "feed" in current_url or "linkedin.com/feed" in current_url
+                
+                if not modal_open and on_feed:
+                    print("✅ Modal closed and on feed page - post likely published!")
+                    
                     # Additional wait to ensure post is processed
                     time.sleep(3)
                     
                     # Try to verify post appears in feed
                     try:
-                        post_preview = content[:50].strip()
+                        post_preview = content[:80].strip().lower()
+                        # Get first few unique words
+                        preview_words = [w for w in post_preview.split() if len(w) > 3][:5]
+                        
                         feed_posts = self.driver.find_elements(By.XPATH, 
-                            "//div[contains(@class, 'feed-shared-update-v2')] | //article[contains(@class, 'feed-shared-update-v2')]")
+                            "//div[contains(@class, 'feed-shared-update-v2')] | //article[contains(@class, 'feed-shared-update-v2')] | //div[contains(@class, 'update-components-text')]")
                         
                         post_found = False
-                        for post_element in feed_posts[:3]:
-                            post_text = post_element.text
-                            if post_preview.lower() in post_text.lower():
-                                post_found = True
-                                break
+                        for post_element in feed_posts[:5]:  # Check first 5 posts
+                            try:
+                                post_text = post_element.text.lower()
+                                # Check if at least 3 words from preview are in the post
+                                matches = sum(1 for word in preview_words if word in post_text)
+                                if matches >= 3:
+                                    post_found = True
+                                    print(f"✅ Post verified in feed! ({matches} words matched)")
+                                    break
+                            except:
+                                continue
                         
                         if post_found:
                             print("✅ Post published successfully and verified in feed!")
                             return True
                         else:
-                            print("✅ Post button was clicked. Post may still be processing.")
-                            return True
-                    except:
-                        print("✅ Post button was clicked successfully!")
+                            print("⚠️ Post button was clicked and modal closed, but post not found in feed yet.")
+                            print("   This might be normal - LinkedIn sometimes takes a moment to show new posts.")
+                            print("   Please check your LinkedIn feed manually to confirm.")
+                            return True  # Return True as button was clicked and modal closed
+                    except Exception as e:
+                        print(f"⚠️ Could not verify post in feed: {e}")
+                        print("✅ Post button was clicked and modal closed - post likely published!")
                         return True
-                else:
-                    print("⚠️ Not on feed page. Post may not have been published.")
+                elif modal_open:
+                    print("⚠️ Post button was clicked but modal is still open.")
+                    print("   LinkedIn might require additional confirmation or there was an error.")
+                    # Try to find error messages
+                    try:
+                        error_elements = self.driver.find_elements(By.XPATH, 
+                            "//div[contains(@class, 'error')] | //div[contains(@class, 'alert')] | //span[contains(@class, 'error')]")
+                        for error_elem in error_elements:
+                            if error_elem.is_displayed():
+                                print(f"   Error message: {error_elem.text}")
+                    except:
+                        pass
                     return False
+                else:
+                    print("⚠️ Post button was clicked but verification unclear.")
+                    print(f"   Current URL: {current_url}")
+                    print("   Please check your LinkedIn feed manually.")
+                    return True  # Return True as button was clicked
                     
             except Exception as e:
                 print(f"⚠️ Could not verify post status: {e}")
+                import traceback
+                traceback.print_exc()
                 print("✅ Post button was clicked. Please check your LinkedIn feed manually.")
                 return True
             
