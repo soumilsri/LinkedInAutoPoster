@@ -214,58 +214,121 @@ class LinkedInPoster:
                 EC.presence_of_element_located((By.XPATH, "//div[@contenteditable='true'][@role='textbox'] | //div[@aria-label='Write a post']"))
             )
             
-            # Clear and enter content using JavaScript
+            # Clear and enter content - use a more LinkedIn-compatible approach
             post_textarea.click()
             time.sleep(1)
             
-            # Set content using JavaScript - handles emojis and special characters
-            self.driver.execute_script("""
-                var element = arguments[0];
-                var text = arguments[1];
+            # Try to clear using keyboard shortcuts (more natural)
+            try:
+                post_textarea.send_keys(Keys.CONTROL + "a")
+                time.sleep(0.3)
+                post_textarea.send_keys(Keys.DELETE)
+                time.sleep(0.5)
+            except:
+                # Fallback to JavaScript clear
+                self.driver.execute_script("arguments[0].innerHTML = ''; arguments[0].innerText = '';", post_textarea)
+                time.sleep(0.5)
+            
+            # Set content using a hybrid approach: type first part, then use JS for rest
+            # This makes it more human-like while handling emojis
+            try:
+                # Try typing first 200 characters (if no emojis) to trigger LinkedIn's validation
+                safe_chars = content[:200]
+                # Check if safe_chars contains only ASCII/BMP characters
+                try:
+                    safe_chars.encode('ascii')
+                    # All ASCII - safe to type
+                    post_textarea.send_keys(safe_chars)
+                    time.sleep(1)
+                    remaining = content[200:]
+                except UnicodeEncodeError:
+                    # Contains non-ASCII - use JS for everything
+                    safe_chars = ""
+                    remaining = content
                 
-                // Focus the element first
-                element.focus();
-                
-                // Clear existing content
-                element.innerHTML = '';
-                element.innerText = '';
-                
-                // Set text using innerText (preserves formatting and handles emojis)
-                element.innerText = text;
-                
-                // Create a proper InputEvent
-                var inputEvent = new InputEvent('input', {
-                    bubbles: true,
-                    cancelable: true,
-                    inputType: 'insertText',
-                    data: text
-                });
-                element.dispatchEvent(inputEvent);
-                
-                // Trigger beforeinput event
-                var beforeInputEvent = new InputEvent('beforeinput', {
-                    bubbles: true,
-                    cancelable: true,
-                    inputType: 'insertText',
-                    data: text
-                });
-                element.dispatchEvent(beforeInputEvent);
-                
-                // Trigger change event
-                var changeEvent = new Event('change', { bubbles: true, cancelable: true });
-                element.dispatchEvent(changeEvent);
-                
-                // Set cursor to end
-                var range = document.createRange();
-                var selection = window.getSelection();
-                range.selectNodeContents(element);
-                range.collapse(false);
-                selection.removeAllRanges();
-                selection.addRange(range);
-                
-                // Focus the element
-                element.focus();
-            """, post_textarea, content)
+                # Use JavaScript for the rest (handles emojis and special chars)
+                if remaining:
+                    self.driver.execute_script("""
+                        var element = arguments[0];
+                        var text = arguments[1];
+                        
+                        // Append text
+                        var currentText = element.innerText || element.textContent || '';
+                        element.innerText = currentText + text;
+                        
+                        // Trigger all necessary events
+                        var inputEvent = new InputEvent('input', {
+                            bubbles: true,
+                            cancelable: true,
+                            inputType: 'insertText',
+                            data: text
+                        });
+                        element.dispatchEvent(inputEvent);
+                        
+                        var changeEvent = new Event('change', { bubbles: true, cancelable: true });
+                        element.dispatchEvent(changeEvent);
+                        
+                        // Also trigger keyup for LinkedIn
+                        var keyupEvent = new KeyboardEvent('keyup', { 
+                            bubbles: true, 
+                            cancelable: true,
+                            key: 'Enter'
+                        });
+                        element.dispatchEvent(keyupEvent);
+                    """, post_textarea, remaining)
+                    time.sleep(1)
+            except Exception as e:
+                print(f"⚠️ Hybrid approach failed, using pure JavaScript: {e}")
+                # Fallback to pure JavaScript
+                self.driver.execute_script("""
+                    var element = arguments[0];
+                    var text = arguments[1];
+                    
+                    // Focus and clear
+                    element.focus();
+                    element.innerHTML = '';
+                    element.innerText = '';
+                    
+                    // Set text
+                    element.innerText = text;
+                    
+                    // Trigger comprehensive events
+                    var beforeInput = new InputEvent('beforeinput', {
+                        bubbles: true,
+                        cancelable: true,
+                        inputType: 'insertText',
+                        data: text
+                    });
+                    element.dispatchEvent(beforeInput);
+                    
+                    var inputEvent = new InputEvent('input', {
+                        bubbles: true,
+                        cancelable: true,
+                        inputType: 'insertText',
+                        data: text
+                    });
+                    element.dispatchEvent(inputEvent);
+                    
+                    var changeEvent = new Event('change', { bubbles: true, cancelable: true });
+                    element.dispatchEvent(changeEvent);
+                    
+                    // Trigger keyboard events
+                    var keydown = new KeyboardEvent('keydown', { bubbles: true, cancelable: true, key: 'Enter' });
+                    element.dispatchEvent(keydown);
+                    
+                    var keyup = new KeyboardEvent('keyup', { bubbles: true, cancelable: true, key: 'Enter' });
+                    element.dispatchEvent(keyup);
+                    
+                    // Set cursor to end
+                    var range = document.createRange();
+                    var selection = window.getSelection();
+                    range.selectNodeContents(element);
+                    range.collapse(false);
+                    selection.removeAllRanges();
+                    selection.addRange(range);
+                    
+                    element.focus();
+                """, post_textarea, content)
             
             # Wait for content to be set and LinkedIn to process it
             time.sleep(4)
@@ -313,10 +376,20 @@ class LinkedInPoster:
             
             print(f"✅ Post content set successfully! ({len(actual_content)} chars)")
             
-            # Wait for Post button to be enabled - LinkedIn needs time to validate
-            time.sleep(3)
+            # Trigger one more input event to ensure LinkedIn recognizes the content
+            post_textarea.click()
+            time.sleep(0.5)
+            self.driver.execute_script("""
+                var element = arguments[0];
+                element.dispatchEvent(new Event('input', { bubbles: true }));
+                element.dispatchEvent(new Event('blur', { bubbles: true }));
+                element.focus();
+            """, post_textarea)
+            time.sleep(1)
             
-            # Find and click the Post button - try multiple selectors
+            # Wait for Post button to be enabled - LinkedIn needs time to validate
+            # Wait up to 10 seconds for the button to become enabled
+            print("⏳ Waiting for Post button to be enabled...")
             post_button = None
             selectors = [
                 "//button[contains(., 'Post') and not(contains(@class, 'disabled')) and not(@disabled)]",
@@ -325,72 +398,136 @@ class LinkedInPoster:
                 "//button[contains(text(), 'Post') and not(@disabled)]",
                 "//span[contains(text(), 'Post')]/ancestor::button[not(@disabled)]",
                 "//button[@data-control-name='share.post' and not(@disabled)]",
-                "//button[contains(@class, 'share-box__post-button')]"
+                "//button[contains(@class, 'share-box__post-button')]",
+                "//button[contains(@class, 'share-actions__primary-action')]"
             ]
             
-            for selector in selectors:
-                try:
-                    # Wait for button to be both visible and enabled
-                    post_button = WebDriverWait(self.driver, 8).until(
-                        EC.element_to_be_clickable((By.XPATH, selector))
-                    )
-                    # Double check it's enabled
-                    if post_button and post_button.is_enabled():
-                        # Check if button is actually clickable (not disabled by LinkedIn)
-                        button_class = post_button.get_attribute('class') or ''
-                        if 'disabled' not in button_class.lower():
-                            print(f"✅ Found Post button using selector: {selector[:50]}...")
+            # Wait for button to be enabled (not just clickable)
+            for wait_time in range(10):  # Wait up to 10 seconds
+                for selector in selectors:
+                    try:
+                        buttons = self.driver.find_elements(By.XPATH, selector)
+                        for btn in buttons:
+                            if btn.is_displayed():
+                                # Check multiple conditions
+                                is_enabled = btn.is_enabled()
+                                disabled_attr = btn.get_attribute('disabled')
+                                button_class = btn.get_attribute('class') or ''
+                                aria_disabled = btn.get_attribute('aria-disabled')
+                                
+                                # Button is truly enabled if:
+                                # - is_enabled() returns True
+                                # - disabled attribute is None
+                                # - class doesn't contain 'disabled'
+                                # - aria-disabled is not 'true'
+                                if (is_enabled and 
+                                    disabled_attr is None and 
+                                    'disabled' not in button_class.lower() and
+                                    aria_disabled != 'true'):
+                                    post_button = btn
+                                    print(f"✅ Found enabled Post button! (waited {wait_time + 1}s)")
+                                    break
+                        if post_button:
                             break
-                        else:
-                            print(f"⚠️ Post button found but appears disabled")
-                            post_button = None
-                except:
-                    continue
+                    except:
+                        continue
+                
+                if post_button:
+                    break
+                
+                time.sleep(1)
             
             if not post_button:
-                print("❌ Could not find enabled Post button")
-                # Try to see what buttons are available
+                print("❌ Could not find enabled Post button after waiting")
+                # Debug: Show what buttons are available
                 try:
                     all_buttons = self.driver.find_elements(By.XPATH, "//button[contains(., 'Post')]")
-                    print(f"   Found {len(all_buttons)} buttons with 'Post' text")
-                    for btn in all_buttons:
-                        print(f"   - Class: {btn.get_attribute('class')}, Enabled: {btn.is_enabled()}, Disabled attr: {btn.get_attribute('disabled')}")
+                    print(f"   Found {len(all_buttons)} buttons with 'Post' text:")
+                    for i, btn in enumerate(all_buttons[:5]):
+                        try:
+                            print(f"   Button {i+1}: Enabled={btn.is_enabled()}, Disabled attr={btn.get_attribute('disabled')}, Class={btn.get_attribute('class')[:50]}")
+                        except:
+                            pass
                 except:
                     pass
                 return False
             
             # Scroll button into view and wait
             self.driver.execute_script("arguments[0].scrollIntoView({block: 'center', behavior: 'smooth'});", post_button)
-            time.sleep(2)
+            time.sleep(1)
+            
+            # Double-check button is still enabled before clicking
+            if not post_button.is_enabled() or post_button.get_attribute('disabled') is not None:
+                print("⚠️ Post button became disabled before clicking. Retrying...")
+                time.sleep(2)
+                # Try to find it again
+                for selector in selectors[:3]:  # Try top 3 selectors
+                    try:
+                        btn = self.driver.find_element(By.XPATH, selector)
+                        if btn.is_enabled() and btn.get_attribute('disabled') is None:
+                            post_button = btn
+                            break
+                    except:
+                        continue
+                
+                if not post_button.is_enabled():
+                    print("❌ Post button is disabled and cannot be clicked")
+                    return False
             
             # Click the Post button with multiple strategies
             clicked = False
+            click_method = None
+            
+            # Strategy 1: Move to element first, then click (more human-like)
             try:
-                # Strategy 1: Regular click
-                post_button.click()
+                from selenium.webdriver.common.action_chains import ActionChains
+                ActionChains(self.driver).move_to_element(post_button).pause(0.2).click().perform()
                 clicked = True
-                print("✅ Post button clicked (regular click)!")
+                click_method = "ActionChains"
+                print("✅ Post button clicked (ActionChains)!")
             except Exception as e1:
-                print(f"⚠️ Regular click failed: {e1}")
+                print(f"⚠️ ActionChains click failed: {e1}")
                 try:
-                    # Strategy 2: JavaScript click
-                    self.driver.execute_script("arguments[0].click();", post_button)
+                    # Strategy 2: Regular click
+                    post_button.click()
                     clicked = True
-                    print("✅ Post button clicked (JavaScript)!")
+                    click_method = "regular"
+                    print("✅ Post button clicked (regular click)!")
                 except Exception as e2:
-                    print(f"⚠️ JavaScript click failed: {e2}")
+                    print(f"⚠️ Regular click failed: {e2}")
                     try:
-                        # Strategy 3: Action chains
-                        from selenium.webdriver.common.action_chains import ActionChains
-                        ActionChains(self.driver).move_to_element(post_button).click().perform()
+                        # Strategy 3: JavaScript click with mouse events
+                        self.driver.execute_script("""
+                            var btn = arguments[0];
+                            // Simulate mouse events
+                            var mouseDown = new MouseEvent('mousedown', { bubbles: true, cancelable: true });
+                            var mouseUp = new MouseEvent('mouseup', { bubbles: true, cancelable: true });
+                            var clickEvent = new MouseEvent('click', { bubbles: true, cancelable: true });
+                            btn.dispatchEvent(mouseDown);
+                            btn.dispatchEvent(mouseUp);
+                            btn.dispatchEvent(clickEvent);
+                            btn.click();
+                        """, post_button)
                         clicked = True
-                        print("✅ Post button clicked (ActionChains)!")
+                        click_method = "JavaScript"
+                        print("✅ Post button clicked (JavaScript with events)!")
                     except Exception as e3:
                         print(f"❌ All click strategies failed: {e3}")
                         return False
             
             if not clicked:
                 return False
+            
+            # Wait a moment to see if click registered
+            time.sleep(1)
+            
+            # Verify the click actually did something - check if button state changed or modal started closing
+            try:
+                # Check if button became disabled (indicates click was registered)
+                if post_button.get_attribute('disabled') is not None or 'disabled' in (post_button.get_attribute('class') or '').lower():
+                    print("✅ Button state changed - click registered!")
+            except:
+                pass
             
             # Wait for post to be submitted - check for modal close or confirmation
             time.sleep(3)
